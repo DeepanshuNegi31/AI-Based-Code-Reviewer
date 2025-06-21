@@ -7,27 +7,64 @@ import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github-dark.css";
 import axios from 'axios'
 import './App.css'
+import Login from './Login'
 
 function App() {
-  const [ count, setCount ] = useState(0)
-  const [ code, setCode ] = useState(` function sum() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [code, setCode] = useState(` function sum() {
   return 1 + 1
 }`)
-
-  const [ review, setReview ] = useState(``)
+  const [review, setReview] = useState(``)
 
   useEffect(() => {
+    // Check if user is already authenticated
+    const token = localStorage.getItem('token')
+    if (token) {
+      setIsAuthenticated(true)
+    }
     prism.highlightAll()
   }, [])
 
   async function reviewCode() {
-    const response = await axios.post('http://localhost:3000/ai/get-review', { code })
-    setReview(response.data)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await axios.post('http://localhost:3000/ai/get-review', 
+        { code },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      setReview(response.data);
+    } catch (error) {
+      console.error("Axios Error:", error);
+      if (error.response?.status === 401) {
+        setIsAuthenticated(false)
+        localStorage.removeItem('token')
+      }
+      setReview("Error fetching review. Check console logs.");
+    }
+  }
+
+  if (!isAuthenticated) {
+    return <Login onLogin={setIsAuthenticated} />
   }
 
   return (
     <>
       <main>
+        <div className="header">
+          <button 
+            className="logout-button"
+            onClick={() => {
+              localStorage.removeItem('token')
+              setIsAuthenticated(false)
+            }}
+          >
+            Logout
+          </button>
+        </div>
         <div className="left">
           <div className="code">
             <Editor
@@ -51,16 +88,12 @@ function App() {
         </div>
         <div className="right">
           <Markdown
-
-            rehypePlugins={[ rehypeHighlight ]}
-
+            rehypePlugins={[rehypeHighlight]}
           >{review}</Markdown>
         </div>
       </main>
     </>
   )
 }
-
-
 
 export default App

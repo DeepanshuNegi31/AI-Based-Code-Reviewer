@@ -1,18 +1,20 @@
 const express = require('express');
-const aiRoutes = require('./routes/ai.routes')
-const cors = require('cors')
+const cors = require('cors');
+const aiRoutes = require('./routes/ai.routes');
 
-const app = express()
+const app = express();
 
-app.use(cors())
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-
-app.use(express.json())
-
+// Routes
 app.get('/', (req, res) => {
-    res.send('Hello World')
-})
+  res.send('Hello World');
+});
 
-app.use('/ai', aiRoutes)
+app.use('/ai', aiRoutes);
+const authRoutes = require('./routes/auth');
+app.use('/auth', authRoutes);
 
-module.exports = app
+module.exports = app;
